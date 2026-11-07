@@ -1,19 +1,20 @@
-import { z } from "zod";
 import type {
   FOLLOW_STATUS,
   PROFILE_PRIVACY,
   USER_GENDER,
 } from "../../common/enums";
-import type { IDataResponse, IPaginationInfo } from "../../common/types";
+import type {
+  IDataResponse,
+  IPaginationInfo,
+  TSchema,
+} from "../../common/types";
 import { IUser } from "../../database";
 import {
   getProfileSchema,
   updatePrivacySchema,
-  followSchema,
-  getFollowRequestsSchema,
-  followRelationSchema,
   searchSchema,
   suggestionsSchema,
+  deleteUserSchema,
 } from "./user.schema";
 
 export interface IUsersRes extends IDataResponse<IUser[]> {}
@@ -39,36 +40,11 @@ export interface IUploadImagesRes extends IDataResponse<
   Record<string, string[]>
 > {}
 
-export type TGetProfileDTO = z.infer<ReturnType<typeof getProfileSchema>>;
+export type TGetProfileDTO = TSchema<typeof getProfileSchema>;
 
-export type TUpdatePrivacyDTO = z.infer<ReturnType<typeof updatePrivacySchema>>;
+export type TUpdatePrivacyDTO = TSchema<typeof updatePrivacySchema>;
 
-export type TFollowDTO = z.infer<ReturnType<typeof followSchema>>;
-
-export type TFollowRelationDTO = z.infer<
-  ReturnType<typeof followRelationSchema>
->;
-
-export type TGetFollowRequestsDTO = z.infer<
-  ReturnType<typeof getFollowRequestsSchema>
->;
-
-export interface IFollowRequest {
-  id: string;
-  follower: {
-    id: string;
-    name: string;
-    image: string | null;
-    privacy: PROFILE_PRIVACY;
-  };
-}
-
-export interface IGetFollowRequestsRes extends IDataResponse<
-  IFollowRequest[],
-  IPaginationInfo
-> {}
-
-export type TSearchDTO = z.infer<ReturnType<typeof searchSchema>>;
+export type TSearchDTO = TSchema<typeof searchSchema>;
 
 export interface ISearchProfile {
   id: string;
@@ -82,6 +58,8 @@ export interface ISearchRes extends IDataResponse<
   IPaginationInfo
 > {}
 
-export type TSuggestionsDTO = z.infer<ReturnType<typeof suggestionsSchema>>;
+export type TSuggestionsDTO = TSchema<typeof suggestionsSchema>;
 
 export interface ISuggestionsRes extends IDataResponse<ISearchProfile[]> {}
+
+export type TDeleteUserDTO = TSchema<typeof deleteUserSchema>;

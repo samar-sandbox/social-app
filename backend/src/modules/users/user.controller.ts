@@ -1,23 +1,21 @@
 import { Router } from "express";
 import {
   authentication,
-  multerInstance,
+  getMulterInstance,
   requiredRoles,
   sendResponse,
   upload,
   validation,
 } from "../../common/middlewares";
 import { userService } from "./user.service";
-import { USER_ROLE, FILE_TYPE } from "../../common/enums";
+import { USER_ROLE, FILE_TYPE, MULTER_STORAGE } from "../../common/enums";
 import {
-  followSchema,
   getProfileSchema,
   updatePrivacySchema,
   uploadImagesSchema,
-  getFollowRequestsSchema,
-  followRelationSchema,
   searchSchema,
   suggestionsSchema,
+  deleteUserSchema,
 } from "./user.schema";
 import { getAuthUser, getReqData } from "../../common/helpers";
 import type {
@@ -26,11 +24,9 @@ import type {
   IUploadImagesRes,
   TGetProfileDTO,
   TUpdatePrivacyDTO,
-  TFollowDTO,
-  TGetFollowRequestsDTO,
-  TFollowRelationDTO,
   TSearchDTO,
   TSuggestionsDTO,
+  TDeleteUserDTO,
 } from "./user.dto";
 import type { IBasicResponse } from "../../common/types";
 
@@ -66,7 +62,7 @@ router.get(
 router.post(
   "/upload",
   upload(
-    multerInstance.fields([
+    getMulterInstance(MULTER_STORAGE.DISK).fields([
       { name: "image", maxCount: 1 },
       { name: "coverImages", maxCount: 2 },
     ]),
@@ -95,62 +91,6 @@ router.patch(
   }),
 );
 
-router.post(
-  "/follow/:userId",
-  validation(followSchema),
-  sendResponse<IBasicResponse>(async (req) => {
-    const user = getAuthUser(req);
-    const { params } = getReqData<TFollowDTO>(req);
-
-    const result = await userService.follow(user.id, params.userId);
-
-    return { status: 201, ...result };
-  }),
-);
-
-router.patch(
-  "/follow/:relationId",
-  validation(followRelationSchema),
-  sendResponse<IBasicResponse>(async (req) => {
-    const user = getAuthUser(req);
-    const { params } = getReqData<TFollowRelationDTO>(req);
-
-    const result = await userService.acceptFollowRequest(
-      user.id,
-      params.relationId,
-    );
-
-    return result;
-  }),
-);
-
-// Unfollow or delete follow request (canceled or rejected)
-router.delete(
-  "/follow/:relationId",
-  validation(followRelationSchema),
-  sendResponse<IBasicResponse>(async (req) => {
-    const user = getAuthUser(req);
-    const { params } = getReqData<TFollowRelationDTO>(req);
-
-    const result = await userService.deleteRelation(user.id, params.relationId);
-
-    return result;
-  }),
-);
-
-router.get(
-  "/follow",
-  validation(getFollowRequestsSchema),
-  sendResponse(async (req) => {
-    const user = getAuthUser(req);
-    const { query } = getReqData<TGetFollowRequestsDTO>(req);
-
-    const result = await userService.getFollowRequests(user.id, query);
-
-    return result;
-  }),
-);
-
 router.get(
   "/search",
   validation(searchSchema),
@@ -172,6 +112,30 @@ router.get(
     const { query } = getReqData<TSuggestionsDTO>(req);
 
     const result = await userService.getSuggestions(user.id, query.limit);
+
+    return result;
+  }),
+);
+
+router.delete(
+  "/",
+  sendResponse<IBasicResponse>(async (req) => {
+    const user = getAuthUser(req);
+
+    const result = await userService.deleteUser(user.id);
+
+    return result;
+  }),
+);
+
+router.delete(
+  "/:userId",
+  requiredRoles([USER_ROLE.ADMIN]),
+  validation(deleteUserSchema),
+  sendResponse<IBasicResponse>(async (req) => {
+    const { params } = getReqData<TDeleteUserDTO>(req);
+
+    const result = await userService.forceDeleteUser(params.userId);
 
     return result;
   }),

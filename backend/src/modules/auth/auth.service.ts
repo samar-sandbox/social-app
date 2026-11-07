@@ -20,7 +20,7 @@ import {
   ConflictException,
   InternalServerException,
 } from "../../common/exceptions";
-import { encrypt, hash, compare } from "../../common/services/security";
+import { compare } from "../../common/services/security";
 import { userRepository, userService } from "../users";
 import { MAIL_DETAILS } from "../../common/constants";
 import type {
@@ -41,31 +41,16 @@ import type { IBasicResponse } from "../../common/types";
 
 class AuthService {
   async signup(userData: TRegisterDTO["body"]): Promise<IRegisterRes> {
-    const { email, password, phone } = userData;
+    const user = await userRepository.exists({ email: userData.email });
 
-    const user = await userRepository.exists({ email });
     if (user) {
       throw new ConflictException("Email already exists");
     }
 
-    const hashedPassword = await hash(password);
-    const encryptedPhone = encrypt(phone);
-
-    const [newUser] = await userRepository.create(
-      [
-        {
-          ...userData,
-          password: hashedPassword,
-          phone: encryptedPhone,
-          provider: AUTH_PROVIDER.LOCAL,
-        },
-      ],
-      {
-        // already validated before password hashing and phone encryption
-        // phone won't pass the validation after encryption
-        validateBeforeSave: false,
-      },
-    );
+    const newUser = await userRepository.create({
+      ...userData,
+      provider: AUTH_PROVIDER.LOCAL,
+    });
 
     if (!newUser) {
       throw new InternalServerException("Failed to create new user");
@@ -75,7 +60,7 @@ class AuthService {
     const expiresIn = MAIL_DETAILS[subject].expiresIn;
 
     otpService.sendOTP({
-      userData: { id: newUser.id, email, name: newUser.name },
+      userData: { id: newUser.id, email: newUser.email, name: newUser.name },
       subject,
       expiresIn,
     });
@@ -413,8 +398,7 @@ class AuthService {
   }: TResetPasswordDTO["body"]): Promise<IBasicResponse> {
     const { userId } = await this.verifyPasswordOTP({ email, otp }, true);
 
-    const hashedPassword = await hash(password);
-    await userRepository.updateOne({ email }, { password: hashedPassword });
+    await userRepository.updateOne({ email }, { password });
 
     await userService.deleteUserResources(userId!);
 

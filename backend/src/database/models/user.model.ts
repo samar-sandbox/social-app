@@ -1,4 +1,4 @@
-import { InferSchemaType, model, Schema } from "mongoose";
+import { model, Schema, type UpdateQuery } from "mongoose";
 import {
   AUTH_PROVIDER,
   PROFILE_PRIVACY,
@@ -7,6 +7,7 @@ import {
 } from "../../common/enums";
 import type { TModel } from "../../common/types";
 import type { IUser, IUserVirtuals } from "../types/user.type";
+import { encrypt, hash } from "../../common/services/security";
 
 const schema = new Schema<
   IUser,
@@ -97,6 +98,7 @@ const schema = new Schema<
   {
     timestamps: true,
     strict: true,
+    strictQuery: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
@@ -116,7 +118,54 @@ schema
     return `${this.firstName}${this.lastName ? ` ${this.lastName}` : ""}`;
   });
 
-export const User = model("user", schema);
+schema.pre("save", async function () {
+  if (this.password && this.isModified("password")) {
+    this.password = await hash(this.password);
 
-export type TUser = InferSchemaType<typeof schema>;
-export type TUserDocument = ReturnType<(typeof User)["hydrate"]>;
+    console.log("PRE SAVE: hashed password");
+  }
+  if (this.phone && this.isModified("phone")) {
+    this.phone = encrypt(this.phone);
+
+    console.log("PRE SAVE: encrypted phone");
+  }
+});
+
+schema.pre(["updateOne", "findOneAndUpdate"], async function () {
+  const update = this.getUpdate() as UpdateQuery<IUser>;
+
+  if (update.password) {
+    update.password = await hash(update.password);
+
+    console.log("PRE UPDATE: hashed password");
+  }
+  if (update.phone) {
+    update.phone = encrypt(update.phone);
+
+    console.log("PRE UPDATE: encrypted phone");
+  }
+});
+
+schema.pre(["find", "findOne", "countDocuments"], function () {
+  const options = this.getOptions();
+  const query = this.getQuery();
+
+  if (options.paranoid !== false) {
+    this.setQuery({ ...query, deletedAt: null });
+
+    console.log("PRE FIND: filtered soft deleted users");
+  }
+});
+
+schema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], function () {
+  const options = this.getOptions();
+  const query = this.getQuery();
+
+  if (options.force !== true) {
+    this.setQuery({ ...query, deletedAt: null });
+
+    console.log("PRE DELETE: filtered soft deleted users");
+  }
+});
+
+export const User = model("user", schema);

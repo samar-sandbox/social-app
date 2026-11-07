@@ -26,25 +26,6 @@ export const updatePrivacySchema = (_lang: LANG) =>
     }),
   });
 
-export const followSchema = (_lang: LANG) =>
-  z.object({
-    params: z.object({
-      userId: objectIdSchema("Invalid param format, expected ObjectId"),
-    }),
-  });
-
-export const followRelationSchema = (_lang: LANG) =>
-  z.object({
-    params: z.object({
-      relationId: objectIdSchema("Invalid param format, expected ObjectId"),
-    }),
-  });
-
-export const getFollowRequestsSchema = (lang: LANG) =>
-  z.object({
-    query: paginationSchema(lang),
-  });
-
 export const searchSchema = (lang: LANG) =>
   z.object({
     query: z.object({
@@ -59,6 +40,14 @@ export const suggestionsSchema = (_lang: LANG) =>
       limit: z.coerce
         .number("Limit must be a valid number")
         .int("Limit must be a valid integer")
+        .min(1, "Limit must be at least 1")
         .default(10),
+    }),
+  });
+
+export const deleteUserSchema = (_lang: LANG) =>
+  z.object({
+    params: z.object({
+      userId: objectIdSchema("Invalid param format, expected ObjectId"),
     }),
   });
