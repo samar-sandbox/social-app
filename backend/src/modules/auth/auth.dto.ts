@@ -1,4 +1,3 @@
-import { z } from "zod";
 import {
   googleAuthSchema,
   loginSchema,
@@ -12,6 +11,7 @@ import type {
   IDataResponse,
   IBasicResponse,
   ITokens,
+  TSchema,
 } from "../../common/types";
 
 export interface IAuthRes extends IDataResponse<ITokens> {}
@@ -21,14 +21,14 @@ export interface IRegisterRes extends IDataResponse<{
   id: string;
 }> {}
 
-export type TRegisterDTO = z.infer<ReturnType<typeof registerSchema>>;
+export type TRegisterDTO = TSchema<typeof registerSchema>;
 
 // Login
 export type ILoginRes =
   | IBasicResponse<{ twoStepVerificationEnabled: true }>
   | IDataResponse<ITokens, { twoStepVerificationEnabled: false }>;
 
-export type TLoginDTO = z.infer<ReturnType<typeof loginSchema>>;
+export type TLoginDTO = TSchema<typeof loginSchema>;
 
 // Google Auth
 export interface IGoogleAuthRes extends IDataResponse<
@@ -36,18 +36,18 @@ export interface IGoogleAuthRes extends IDataResponse<
   { isNew: boolean }
 > {}
 
-export type TGoogleAuthDTO = z.infer<ReturnType<typeof googleAuthSchema>>;
+export type TGoogleAuthDTO = TSchema<typeof googleAuthSchema>;
 
 // Logout
-export type TLogoutDTO = z.infer<ReturnType<typeof logoutSchema>>;
+export type TLogoutDTO = TSchema<typeof logoutSchema>;
 
 // OTP
-export type TVerifyOTPDTO = z.infer<ReturnType<typeof verifyOTPSchema>>;
+export type TVerifyOTPDTO = TSchema<typeof verifyOTPSchema>;
 
-export type TSendOTPDTO = z.infer<ReturnType<typeof sendOTPSchema>>;
+export type TSendOTPDTO = TSchema<typeof sendOTPSchema>;
 
 // Reset Password
-export type TResetPasswordDTO = z.infer<ReturnType<typeof resetPasswordSchema>>;
+export type TResetPasswordDTO = TSchema<typeof resetPasswordSchema>;
 
 export interface IVerifyPasswordRes extends IBasicResponse<{
   userId: string | undefined;

@@ -4,7 +4,7 @@ import type {
   AUTH_PROVIDER,
   USER_ROLE,
 } from "../../common/enums";
-import type { THydratedDocument } from "../../common/types";
+import type { THydratedDocument, IDefaultVirtuals } from "../../common/types";
 
 export interface IUser {
   firstName?: string;
@@ -28,8 +28,7 @@ export interface IUser {
   tokensValidAfter?: Date;
 }
 
-export interface IUserVirtuals {
-  id: string;
+export interface IUserVirtuals extends IDefaultVirtuals {
   name: string;
 }
 
