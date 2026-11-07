@@ -1,9 +1,9 @@
 import { model, Schema } from "mongoose";
 import { FOLLOW_STATUS } from "../../common/enums";
 import type { TModel } from "../../common/types";
-import type { IFollow, IFollowVirtuals } from "../types/follow.type";
+import type { IFollow } from "../types/follow.type";
 
-const schema = new Schema<IFollow, TModel<IFollow, IFollowVirtuals>>(
+const schema = new Schema<IFollow, TModel<IFollow>>(
   {
     follower: {
       type: Schema.Types.ObjectId,
@@ -21,7 +21,7 @@ const schema = new Schema<IFollow, TModel<IFollow, IFollowVirtuals>>(
       default: FOLLOW_STATUS.ACCEPTED,
     },
   },
-  { timestamps: true, strict: true },
+  { timestamps: true, strict: true, strictQuery: false },
 );
 
 schema.index({ follower: 1, following: 1 }, { unique: true });

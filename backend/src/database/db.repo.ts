@@ -15,11 +15,16 @@ import type {
   UpdateQuery,
   UpdateResult,
 } from "mongoose";
-import type { IPagination, THydratedDocument, TModel } from "../common/types";
+import type {
+  IPagination,
+  IDefaultVirtuals,
+  THydratedDocument,
+  TModel,
+} from "../common/types";
 
 type TCreateDoc<T> = DeepPartial<ApplyBasicCreateCasting<Require_id<T>>>;
 
-export class DatabaseRepository<TRawDocType, V = {}> {
+export class DatabaseRepository<TRawDocType, V = IDefaultVirtuals> {
   constructor(protected readonly model: TModel<TRawDocType, V>) {}
 
   async exists(

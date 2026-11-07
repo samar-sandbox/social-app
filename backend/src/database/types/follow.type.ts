@@ -6,10 +6,8 @@ export interface IFollow {
   follower: Types.ObjectId;
   following: Types.ObjectId;
   status: FOLLOW_STATUS;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export interface IFollowVirtuals {
-  id: string;
-}
-
-export type TFollowHydratedDoc = THydratedDocument<IFollow, IFollowVirtuals>;
+export type TFollowHydratedDoc = THydratedDocument<IFollow>;

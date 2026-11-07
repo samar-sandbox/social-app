@@ -13,6 +13,15 @@ export interface IPagination<T> extends IPaginationInfo {
   data: T;
 }
 
-export type THydratedDocument<T, V> = HydratedDocument<T, V & {}, {}, V>;
+export interface IDefaultVirtuals {
+  id: string;
+}
+
+export type THydratedDocument<T, V = IDefaultVirtuals> = HydratedDocument<
+  T,
+  V & {},
+  {},
+  V
+>;
 
 export type TModel<T, V = {}> = Model<T, {}, {}, V>;
