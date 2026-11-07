@@ -25,3 +25,8 @@ export enum LANG {
   EN = "en",
   AR = "ar",
 }
+
+export enum MULTER_STORAGE {
+  DISK,
+  MEMORY,
+}

@@ -4,7 +4,13 @@ import helmet from "helmet";
 import config from "./config";
 import { errorHandler, localization, rateLimiter } from "./common/middlewares";
 import { connectDatabase } from "./database/db.connection";
-import { authController, userController } from "./modules";
+import {
+  authController,
+  userController,
+  postController,
+  followController,
+  commentController,
+} from "./modules";
 import { mailService } from "./common/services/mail/mail.service";
 import { redisService } from "./common/services/redis/redis.service";
 
@@ -32,6 +38,9 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authController);
 app.use("/users", userController);
+app.use("/follow", followController);
+app.use("/posts", postController);
+app.use("/comments", commentController);
 
 app.use("/*splat", (req, res) => {
   const path = req.params.splat;

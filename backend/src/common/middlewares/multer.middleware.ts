@@ -2,19 +2,30 @@ import type { RequestHandler } from "express";
 import multer from "multer";
 import { dirname, normalize, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { BadRequestException } from "../exceptions";
 import { FILE_MIME_TYPES } from "../constants";
 import { fileFilter } from "../utils";
-import { FILE_TYPE } from "../enums";
+import { FILE_TYPE, MULTER_STORAGE } from "../enums";
 
 const FOLDER_NAME = "uploads";
 
 const dist = resolve(FOLDER_NAME);
 
-const storage = multer.memoryStorage();
+export function getMulterInstance(
+  storage: MULTER_STORAGE = MULTER_STORAGE.MEMORY,
+) {
+  const storageEngine =
+    storage === MULTER_STORAGE.DISK
+      ? multer.diskStorage({
+          destination: (_req, _file, cb) => cb(null, tmpdir()),
+          filename: (_req, file, cb) => cb(null, file.originalname),
+        })
+      : multer.memoryStorage();
 
-export const multerInstance = multer({ storage });
+  return multer({ storage: storageEngine });
+}
 
 function getFilePath({
   fieldname,
@@ -57,9 +68,16 @@ async function processFiles({
   const paths: Record<string, string[]> = {};
 
   for (const file of files) {
-    const { buffer, originalname, fieldname } = file;
+    const { buffer, path, originalname, fieldname } = file;
 
-    const result = await fileFilter(buffer, allowedTypes);
+    let fileBuffer: Buffer<ArrayBufferLike>;
+    if (path) {
+      fileBuffer = await readFile(path);
+    } else {
+      fileBuffer = buffer;
+    }
+
+    const result = await fileFilter(fileBuffer, allowedTypes);
 
     if (!result.isValid) {
       throw new BadRequestException(
@@ -80,7 +98,8 @@ async function processFiles({
     });
 
     await mkdir(dirname(fileFullPath), { recursive: true });
-    await writeFile(fileFullPath, buffer);
+    await writeFile(fileFullPath, fileBuffer);
+    await rm(path);
 
     if (!paths[fieldname]) {
       paths[fieldname] = [];
@@ -93,7 +112,7 @@ async function processFiles({
 }
 
 export function upload(
-  multerMiddleWare = multerInstance.array("attachments"),
+  multerMiddleWare = getMulterInstance().array("attachments"),
   fileType = FILE_TYPE.FILE,
   renameFiles = true,
 ): RequestHandler {

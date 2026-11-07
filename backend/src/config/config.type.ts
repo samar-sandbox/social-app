@@ -24,4 +24,9 @@ export type TConfig = {
     password: string;
   };
   origins: string[];
+  awsS3: {
+    region: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+  };
 };

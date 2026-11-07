@@ -30,6 +30,11 @@ const config: TConfig = {
     password: process.env.GOOGLE_MAIL_APP_PASSWORD || "",
   },
   origins: process.env.ORIGINS?.split(",") || [],
+  awsS3: {
+    region: process.env.AWS_REGION || "",
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  },
 };
 
 export default config;
