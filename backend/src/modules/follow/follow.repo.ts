@@ -1,12 +1,7 @@
 import { FOLLOW_STATUS } from "../../common/enums";
-import {
-  type IFollow,
-  type IFollowVirtuals,
-  Follow,
-  DatabaseRepository,
-} from "../../database";
+import { type IFollow, Follow, DatabaseRepository } from "../../database";
 
-class FollowRepository extends DatabaseRepository<IFollow, IFollowVirtuals> {
+class FollowRepository extends DatabaseRepository<IFollow> {
   constructor() {
     super(Follow);
   }
