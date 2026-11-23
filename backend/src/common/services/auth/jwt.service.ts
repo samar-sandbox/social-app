@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { USER_ROLE } from "../../enums";
 import config from "../../../config";
 import type { IPayload, ITokens } from "../../types";
+import { buildUserKey } from "../redis";
 
 class JwtService {
   private signToken(
@@ -56,6 +57,10 @@ class JwtService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  buildRevokeKey(userId: string, jti: string) {
+    return buildUserKey(userId, `revoke:${jti}`);
   }
 }
 

@@ -2,7 +2,7 @@ import type { MAIL_SUBJECT } from "../../enums";
 import { BadRequestException } from "../../exceptions";
 import { getOTP } from "../../utils/otp";
 import { mailService } from "../mail";
-import { buildOTPKeys, redisService } from "../redis";
+import { buildUserKey, redisService } from "../redis";
 import { compare, hash } from "../security";
 
 type TUserData = { id: string; name: string; email: string };
@@ -24,6 +24,13 @@ type TOTPVerificationData = {
 };
 
 class OTPService {
+  private buildOTPKeys(userId: string, subject: string) {
+    const otpKey = buildUserKey(userId, `OTP:${subject}`);
+    const trialsKey = `${otpKey}:trials`;
+
+    return { otpKey, trialsKey };
+  }
+
   async checkTrials(trialsKey: string, maxTrials: number) {
     const trials = await redisService.getNum(trialsKey);
 
@@ -44,7 +51,7 @@ class OTPService {
     otp: string | null;
     trialsKey: string;
   }> {
-    const { otpKey, trialsKey } = buildOTPKeys(userId, subject);
+    const { otpKey, trialsKey } = this.buildOTPKeys(userId, subject);
 
     await this.checkTrials(trialsKey, maxTrials);
 
@@ -67,7 +74,7 @@ class OTPService {
     subject,
     expiresIn = 3 * 60,
   }: TOTPData) {
-    const { otpKey } = buildOTPKeys(id, subject);
+    const { otpKey } = this.buildOTPKeys(id, subject);
 
     const otp = await this.createOTP(otpKey, expiresIn);
 

@@ -13,6 +13,7 @@ import {
   registerSchema,
   sendOTPSchema,
   resetPasswordSchema,
+  firebaseInstallationSchema,
 } from "./auth.schema";
 import { getAuthUser, getReqData } from "../../common/helpers";
 import type {
@@ -21,6 +22,7 @@ import type {
   ILoginRes,
   IRegisterRes,
   IVerifyPasswordRes,
+  TFirebaseInstallationDTO,
   TGoogleAuthDTO,
   TLoginDTO,
   TLogoutDTO,
@@ -202,6 +204,21 @@ router.post(
     const { body } = getReqData<TVerifyOTPDTO>(req);
 
     const result = await authService.enableTwoStepVerification(body);
+
+    return result;
+  }),
+);
+
+// Store Firebase Installation ID for push notifications
+router.post(
+  "/firebase-installation",
+  authentication(),
+  validation(firebaseInstallationSchema),
+  sendResponse<IBasicResponse>(async (req) => {
+    const user = getAuthUser(req);
+    const { body } = getReqData<TFirebaseInstallationDTO>(req);
+
+    const result = await authService.storeFirebaseInstallation(user.id, body);
 
     return result;
   }),

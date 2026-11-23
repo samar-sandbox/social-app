@@ -106,3 +106,10 @@ export const resetPasswordSchema = (lang: LANG) =>
         ),
     }),
   });
+
+export const firebaseInstallationSchema = (_lang: LANG) =>
+  z.object({
+    body: z.object({
+      installationId: z.string().min(1, "Firebase Installation ID is required"),
+    }),
+  });

@@ -73,6 +73,18 @@ class RedisService {
   async ttl(key: string) {
     return this.client.ttl(key);
   }
+
+  async sAdd(key: string, value: string) {
+    return this.client.sAdd(key, value);
+  }
+
+  async sMembers(key: string) {
+    return this.client.sMembers(key);
+  }
+
+  async sRem(key: string, values: string[]) {
+    return this.client.sRem(key, values);
+  }
 }
 
 const redisService = new RedisService();

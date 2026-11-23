@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from "../exceptions";
 import { jwtService } from "../services/auth";
-import { buildRevokeKey, redisService } from "../services/redis";
+import { redisService } from "../services/redis";
 import { userRepository } from "../../modules/users/user.repo";
 
 function getSecret(isAccessToken: boolean, role: USER_ROLE): string {
@@ -34,7 +34,7 @@ async function checkToken(
     return { success: false };
   }
 
-  const key = buildRevokeKey(payload.sub!, payload.jti!);
+  const key = jwtService.buildRevokeKey(payload.sub!, payload.jti!);
   const exist = await redisService.exists(key);
 
   return { success: !exist };

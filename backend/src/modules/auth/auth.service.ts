@@ -10,11 +10,7 @@ import {
   otpService,
   oauthService,
 } from "../../common/services/auth";
-import {
-  buildLoginKey,
-  buildRevokeKey,
-  redisService,
-} from "../../common/services/redis";
+import { buildUserKey, redisService } from "../../common/services/redis";
 import {
   BadRequestException,
   ConflictException,
@@ -29,6 +25,7 @@ import type {
   ILoginRes,
   IRegisterRes,
   IVerifyPasswordRes,
+  TFirebaseInstallationDTO,
   TGoogleAuthDTO,
   TLoginDTO,
   TRegisterDTO,
@@ -38,8 +35,13 @@ import type {
 } from "./auth.dto";
 import type { JwtPayload } from "jsonwebtoken";
 import type { IBasicResponse } from "../../common/types";
+import { notificationService } from "../../common/services/notifications";
 
 class AuthService {
+  private buildLoginKey(userId: string) {
+    return buildUserKey(userId, "login:trials");
+  }
+
   async signup(userData: TRegisterDTO["body"]): Promise<IRegisterRes> {
     const user = await userRepository.exists({ email: userData.email });
 
@@ -92,7 +94,7 @@ class AuthService {
 
     const maxTrials = 5;
     const bannedFor = 5 * 60;
-    const trialsKey = buildLoginKey(id);
+    const trialsKey = this.buildLoginKey(id);
 
     await otpService.checkTrials(trialsKey, maxTrials);
 
@@ -128,6 +130,11 @@ class AuthService {
     }
 
     const tokens = jwtService.getTokens({ sub: id, role }, role);
+
+    notificationService.sendNotification(id, {
+      title: "New login",
+      body: "You have successfully logged in.",
+    });
 
     return {
       message: "User logged in successfully",
@@ -167,6 +174,11 @@ class AuthService {
       { sub: user.id, role: user.role },
       user.role,
     );
+
+    notificationService.sendNotification(user.id, {
+      title: "New login",
+      body: "You have successfully logged in.",
+    });
 
     return { message: "User logged in successfully", data: tokens };
   }
@@ -260,7 +272,7 @@ class AuthService {
       return { message: "User logged out successfully" };
     }
 
-    const key = buildRevokeKey(user.id, user.jti!);
+    const key = jwtService.buildRevokeKey(user.id, user.jti!);
     const ttl =
       config.jwtExpiresIn.refreshKey -
       (Math.floor(Date.now() / 1000) - user.iat!);
@@ -465,6 +477,15 @@ class AuthService {
     );
 
     return { message: "Two-Step Verification enabled successfully" };
+  }
+
+  async storeFirebaseInstallation(
+    userId: string,
+    { installationId }: TFirebaseInstallationDTO["body"],
+  ): Promise<IBasicResponse> {
+    await notificationService.storeFID(userId, installationId);
+
+    return { message: "Firebase Installation ID stored successfully" };
   }
 }
 

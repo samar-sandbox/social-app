@@ -1,4 +1,5 @@
 import {
+  firebaseInstallationSchema,
   googleAuthSchema,
   loginSchema,
   logoutSchema,
@@ -52,3 +53,8 @@ export type TResetPasswordDTO = TSchema<typeof resetPasswordSchema>;
 export interface IVerifyPasswordRes extends IBasicResponse<{
   userId: string | undefined;
 }> {}
+
+// Firebase Cloud Messaging Installation
+export type TFirebaseInstallationDTO = TSchema<
+  typeof firebaseInstallationSchema
+>;
