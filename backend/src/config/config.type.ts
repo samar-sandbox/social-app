@@ -28,5 +28,7 @@ export type TConfig = {
     region: string;
     accessKeyId: string;
     secretAccessKey: string;
+    bucket: string;
   };
+  firebaseServiceAccountPath: string;
 };

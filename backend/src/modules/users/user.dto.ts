@@ -15,6 +15,8 @@ import {
   searchSchema,
   suggestionsSchema,
   deleteUserSchema,
+  uploadPresignedUrlSchema,
+  uploadImagesSchema,
 } from "./user.schema";
 
 export interface IUsersRes extends IDataResponse<IUser[]> {}
@@ -39,6 +41,16 @@ export interface IUserRes extends IDataResponse<IUserProfile> {}
 export interface IUploadImagesRes extends IDataResponse<
   Record<string, string[]>
 > {}
+
+export interface IPresignedUploadImagesRes extends IDataResponse<{
+  url: string;
+}> {}
+
+export type IPresignedUploadImagesDTO = TSchema<
+  typeof uploadPresignedUrlSchema
+>;
+
+export type TUploadImagesDTO = TSchema<typeof uploadImagesSchema>;
 
 export type TGetProfileDTO = TSchema<typeof getProfileSchema>;
 

@@ -16,6 +16,7 @@ import {
   searchSchema,
   suggestionsSchema,
   deleteUserSchema,
+  uploadPresignedUrlSchema,
 } from "./user.schema";
 import { getAuthUser, getReqData } from "../../common/helpers";
 import type {
@@ -27,8 +28,14 @@ import type {
   TSearchDTO,
   TSuggestionsDTO,
   TDeleteUserDTO,
+  IPresignedUploadImagesRes,
+  ISearchRes,
+  ISuggestionsRes,
+  IPresignedUploadImagesDTO,
+  TUploadImagesDTO,
 } from "./user.dto";
 import type { IBasicResponse } from "../../common/types";
+import { UPLOAD_FIELDS } from "./user.const";
 
 const router = Router();
 
@@ -63,16 +70,33 @@ router.post(
   "/upload",
   upload(
     getMulterInstance(MULTER_STORAGE.DISK).fields([
-      { name: "image", maxCount: 1 },
-      { name: "coverImages", maxCount: 2 },
+      { name: UPLOAD_FIELDS.IMAGE, maxCount: 1 },
+      { name: UPLOAD_FIELDS.COVER_IMAGES, maxCount: 2 },
     ]),
     FILE_TYPE.IMAGE,
   ),
   validation(uploadImagesSchema),
   sendResponse<IUploadImagesRes>(async (req) => {
     const user = getAuthUser(req);
+    const {
+      query: { multipart },
+      files,
+    } = getReqData<TUploadImagesDTO>(req);
 
-    const result = await userService.uploadImages(user.id, req.paths);
+    const result = await userService.uploadImages(user.id, files, multipart);
+
+    return result;
+  }),
+);
+
+router.get(
+  "/upload",
+  validation(uploadPresignedUrlSchema),
+  sendResponse<IPresignedUploadImagesRes>(async (req) => {
+    const user = getAuthUser(req);
+    const { body } = getReqData<IPresignedUploadImagesDTO>(req);
+
+    const result = await userService.presignedUpload(user.id, body);
 
     return result;
   }),
@@ -94,7 +118,7 @@ router.patch(
 router.get(
   "/search",
   validation(searchSchema),
-  sendResponse(async (req) => {
+  sendResponse<ISearchRes>(async (req) => {
     const user = getAuthUser(req);
     const { query } = getReqData<TSearchDTO>(req);
 
@@ -107,7 +131,7 @@ router.get(
 router.get(
   "/suggestions",
   validation(suggestionsSchema),
-  sendResponse(async (req) => {
+  sendResponse<ISuggestionsRes>(async (req) => {
     const user = getAuthUser(req);
     const { query } = getReqData<TSuggestionsDTO>(req);
 

@@ -1,4 +1,3 @@
-import { rm } from "node:fs/promises";
 import { z } from "zod";
 import type { LANG } from "../enums";
 import type { RequestHandler } from "express";
@@ -10,17 +9,13 @@ export function validation(schema: (lang: LANG) => z.ZodType): RequestHandler {
       body: req.body,
       params: req.params,
       query: req.query,
-      files: req.paths,
+      files: req.files,
     });
 
     if (!result.success) {
       const message = result.error.issues
         .map((issue) => issue.message)
         .join(", ");
-
-      if (req.dist) {
-        await rm(req.dist, { recursive: true });
-      }
 
       throw new BadRequestException(message);
     }

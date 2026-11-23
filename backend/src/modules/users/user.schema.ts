@@ -1,12 +1,27 @@
 import { z } from "zod";
 import { LANG } from "../../common/enums";
-import { objectIdSchema, paginationSchema } from "../../common/validation";
+import {
+  multerFileSchema,
+  objectIdSchema,
+  paginationSchema,
+} from "../../common/validation";
 
 export const uploadImagesSchema = (_lang: LANG) =>
   z.object({
-    files: z.object({
-      coverImages: z.array(z.string()).optional(),
-      image: z.array(z.string()).optional(),
+    query: z.object({
+      multipart: z
+        .enum(["true", "false"])
+        .default("false")
+        .transform((value) => value === "true"),
+    }),
+    files: z.array(multerFileSchema, "Files must be an array").min(1),
+  });
+
+export const uploadPresignedUrlSchema = (_lang: LANG) =>
+  z.object({
+    body: z.object({
+      fieldname: z.string(),
+      filename: z.string(),
     }),
   });
 

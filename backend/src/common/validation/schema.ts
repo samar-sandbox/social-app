@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { isValidObjectId } from "mongoose";
 import { z } from "zod";
 import type { LANG } from "../enums";
@@ -22,4 +23,33 @@ export const paginationSchema = (_lang: LANG) =>
 export const paginationQuerySchema = (lang: LANG) =>
   z.object({
     query: paginationSchema(lang),
+  });
+
+export const multerFileSchema = z.object({
+  fieldname: z.string(),
+  originalname: z.string(),
+  encoding: z.string(),
+  mimetype: z.string(),
+  size: z.number(),
+  destination: z.string().default(""),
+  filename: z.string().default(""),
+  path: z.string().default(""),
+  buffer: z.instanceof(Buffer).default(Buffer.from([])),
+  stream: z.instanceof(Readable).default(Readable.from([])),
+});
+
+export const uploadSchema = (_lang: LANG) =>
+  z.object({
+    params: z.object({ path: z.array(z.string()) }),
+    query: z.object({
+      presigned: z
+        .enum(["true", "false"])
+        .default("false")
+        .transform((value) => value === "true"),
+      download: z
+        .enum(["true", "false"])
+        .default("false")
+        .transform((value) => value === "true"),
+      filename: z.string().optional(),
+    }),
   });

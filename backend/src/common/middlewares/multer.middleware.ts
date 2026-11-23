@@ -1,17 +1,12 @@
 import type { RequestHandler } from "express";
 import multer from "multer";
-import { dirname, normalize, relative, resolve } from "node:path";
-import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { BadRequestException } from "../exceptions";
 import { FILE_MIME_TYPES } from "../constants";
 import { fileFilter } from "../utils";
 import { FILE_TYPE, MULTER_STORAGE } from "../enums";
-
-const FOLDER_NAME = "uploads";
-
-const dist = resolve(FOLDER_NAME);
+import type { TFile } from "../types";
 
 export function getMulterInstance(
   storage: MULTER_STORAGE = MULTER_STORAGE.MEMORY,
@@ -27,52 +22,22 @@ export function getMulterInstance(
   return multer({ storage: storageEngine });
 }
 
-function getFilePath({
-  fieldname,
-  originalname,
-  userId,
-  currCount,
-  ext,
-  renameFiles,
-}: {
-  fieldname: string;
-  originalname: string;
-  userId: string;
-  currCount: number;
-  ext: string;
-  renameFiles: boolean;
-}): { filePath: string; fileFullPath: string } {
-  const fileName = renameFiles
-    ? `${fieldname}-${currCount}.${ext}`
-    : originalname;
-
-  const fileFullPath = normalize(`${dist}/${userId}/${fieldname}/${fileName}`);
-
-  const currDir = resolve();
-  const filePath = relative(currDir, fileFullPath);
-
-  return { filePath, fileFullPath };
-}
-
 async function processFiles({
   files,
   allowedTypes,
-  userId = randomUUID(),
-  renameFiles,
 }: {
-  files: Express.Multer.File[];
+  files: TFile[];
   allowedTypes: string[];
-  userId: string | undefined;
-  renameFiles: boolean;
-}): Promise<{ paths: Record<string, string[]>; dist: string }> {
-  const paths: Record<string, string[]> = {};
+}) {
+  const filesWithBuffer: TFile[] = [];
 
   for (const file of files) {
-    const { buffer, path, originalname, fieldname } = file;
+    const { buffer, path, originalname } = file;
 
     let fileBuffer: Buffer<ArrayBufferLike>;
     if (path) {
       fileBuffer = await readFile(path);
+      await rm(path);
     } else {
       fileBuffer = buffer;
     }
@@ -85,36 +50,18 @@ async function processFiles({
       );
     }
 
-    const fieldPaths = paths[fieldname] ?? [];
-    const currCount = fieldPaths.length + 1;
-
-    const { filePath, fileFullPath } = getFilePath({
-      fieldname,
-      originalname,
-      userId,
-      currCount,
-      ext: result.ext,
-      renameFiles,
+    filesWithBuffer.push({
+      ...file,
+      buffer: fileBuffer,
     });
-
-    await mkdir(dirname(fileFullPath), { recursive: true });
-    await writeFile(fileFullPath, fileBuffer);
-    await rm(path);
-
-    if (!paths[fieldname]) {
-      paths[fieldname] = [];
-    }
-
-    paths[fieldname].push(filePath);
   }
 
-  return { paths, dist: userId };
+  return filesWithBuffer;
 }
 
 export function upload(
   multerMiddleWare = getMulterInstance().array("attachments"),
   fileType = FILE_TYPE.FILE,
-  renameFiles = true,
 ): RequestHandler {
   return function (req, res, next) {
     multerMiddleWare(req, res, async (err) => {
@@ -126,7 +73,7 @@ export function upload(
         return next();
       }
 
-      const files = [];
+      const files: TFile[] = [];
       if (req.file) {
         files.push(req.file);
       } else if (Array.isArray(req.files)) {
@@ -142,15 +89,12 @@ export function upload(
       }
 
       try {
-        const { paths, dist } = await processFiles({
+        const processedFiles = await processFiles({
           files,
           allowedTypes: FILE_MIME_TYPES[fileType] ?? [],
-          userId: req.user?.id,
-          renameFiles,
         });
 
-        req.paths = paths;
-        req.dist = `${FOLDER_NAME}/${dist}`;
+        req.files = processedFiles;
 
         return next();
       } catch (err) {

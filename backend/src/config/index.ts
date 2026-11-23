@@ -31,10 +31,12 @@ const config: TConfig = {
   },
   origins: process.env.ORIGINS?.split(",") || [],
   awsS3: {
-    region: process.env.AWS_REGION || "",
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    region: process.env.AWS_S3_REGION || "",
+    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY || "",
+    bucket: process.env.AWS_S3_BUCKET || "",
   },
+  firebaseServiceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "",
 };
 
 export default config;

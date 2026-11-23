@@ -13,3 +13,8 @@ export const PUBLIC_FIELDS = {
   gender: 1,
   createdAt: 1,
 };
+
+export const UPLOAD_FIELDS = {
+  IMAGE: "image",
+  COVER_IMAGES: "coverImages",
+};

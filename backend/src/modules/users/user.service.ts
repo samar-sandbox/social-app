@@ -1,15 +1,18 @@
 import { FOLLOW_STATUS, PROFILE_PRIVACY } from "../../common/enums";
 import {
-  BadRequestException,
+  InternalServerException,
   NotFoundException,
 } from "../../common/exceptions";
 import { buildUserKey, redisService } from "../../common/services/redis";
 import { decrypt } from "../../common/services/security";
-import { IBasicResponse } from "../../common/types";
+import { s3Service } from "../../common/services/storage/s3.service";
+import type { IBasicResponse, TFile } from "../../common/types";
 import type { TUserHydratedDoc } from "../../database";
 import { followRepository } from "../follow/follow.repo";
-import { LIMITED_FIELDS, PUBLIC_FIELDS } from "./user.const";
+import { LIMITED_FIELDS, PUBLIC_FIELDS, UPLOAD_FIELDS } from "./user.const";
 import type {
+  IPresignedUploadImagesDTO,
+  IPresignedUploadImagesRes,
   ISearchRes,
   ISuggestionsRes,
   IUploadImagesRes,
@@ -119,29 +122,74 @@ class UserService {
     };
   }
 
-  async uploadImages(
+  async presignedUpload(
     userId: string,
-    paths: Record<string, string[]> = {},
-  ): Promise<IUploadImagesRes> {
-    if (Object.keys(paths).length === 0) {
-      throw new BadRequestException("At least on image is required");
-    }
-
-    const user = await userRepository.exists({ _id: userId });
+    { fieldname, filename }: IPresignedUploadImagesDTO["body"],
+  ): Promise<IPresignedUploadImagesRes> {
+    const user = await userRepository.findOne({ _id: userId });
 
     if (!user) {
       throw new NotFoundException("User not found");
     }
 
-    const normalizePath = (path: string) => path.replaceAll("\\", "/");
+    const url = await s3Service.getPresignedPutUrl({
+      userId,
+      fieldname,
+      filename,
+    });
 
-    for (const [field, fieldPaths] of Object.entries(paths)) {
-      paths[field] = fieldPaths.map((path) => normalizePath(path));
+    return {
+      message: "Presigned URL generated successfully",
+      data: { url },
+    };
+  }
+
+  async uploadImages(
+    userId: string,
+    files: TFile[],
+    multipart = false,
+  ): Promise<IUploadImagesRes> {
+    const user = await userRepository.findOne({ _id: userId });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
     }
+
+    // Delete existing images if new ones are uploaded
+    const hasNewImage = files.some(
+      (file) => file.fieldname === UPLOAD_FIELDS.IMAGE,
+    );
+    const hasNewCoverImages = files.some(
+      (file) => file.fieldname === UPLOAD_FIELDS.COVER_IMAGES,
+    );
+
+    if (hasNewImage && user.image) {
+      await s3Service.deleteAsset(user.image);
+    }
+    if (hasNewCoverImages && user.coverImages?.length) {
+      const res = await s3Service.deleteAssets(user.coverImages);
+
+      if (res.errors.length) {
+        throw new InternalServerException(
+          "Failed to delete existing cover images",
+        );
+      }
+    }
+
+    const paths = await s3Service.uploadAssets({
+      userId,
+      files,
+      multipart,
+    });
+
+    const { image, coverImages } = paths;
 
     await userRepository.updateOne(
       { _id: userId },
-      { ...paths, image: paths.image?.[0] },
+      {
+        ...(image ? { image: image[0] } : {}),
+        ...(coverImages ? { coverImages } : {}),
+      },
     );
 
     return {
@@ -271,6 +319,22 @@ class UserService {
     if (!deletedCount) {
       throw new NotFoundException("User not found");
     }
+
+    s3Service
+      .deleteDirContent(`uploads/${userId}`)
+      .then((res) => {
+        if (res.errors.length) {
+          console.log(
+            "Errors occurred while deleting user assets:",
+            res.errors,
+          );
+        } else {
+          console.log("User assets deleted successfully");
+        }
+      })
+      .catch((err) => {
+        console.log("Error occurred while deleting user assets:", err);
+      });
 
     return { message: "User deleted successfully" };
   }
