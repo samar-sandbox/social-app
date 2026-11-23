@@ -30,3 +30,8 @@ export enum MULTER_STORAGE {
   DISK,
   MEMORY,
 }
+
+// TODO: Add types
+export enum NOTIFICATION_TYPE {
+  ANY = "ANY",
+}

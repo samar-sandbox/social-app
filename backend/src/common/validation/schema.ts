@@ -38,18 +38,18 @@ export const multerFileSchema = z.object({
   stream: z.instanceof(Readable).default(Readable.from([])),
 });
 
+export const booleanEnumSchema = (defaultValue: "true" | "false" = "false") =>
+  z
+    .enum(["true", "false"])
+    .default(defaultValue)
+    .transform((value) => value === "true");
+
 export const uploadSchema = (_lang: LANG) =>
   z.object({
     params: z.object({ path: z.array(z.string()) }),
     query: z.object({
-      presigned: z
-        .enum(["true", "false"])
-        .default("false")
-        .transform((value) => value === "true"),
-      download: z
-        .enum(["true", "false"])
-        .default("false")
-        .transform((value) => value === "true"),
+      presigned: booleanEnumSchema(),
+      download: booleanEnumSchema(),
       filename: z.string().optional(),
     }),
   });

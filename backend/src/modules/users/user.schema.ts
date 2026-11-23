@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { LANG } from "../../common/enums";
 import {
+  booleanEnumSchema,
   multerFileSchema,
   objectIdSchema,
   paginationSchema,
@@ -9,10 +10,7 @@ import {
 export const uploadImagesSchema = (_lang: LANG) =>
   z.object({
     query: z.object({
-      multipart: z
-        .enum(["true", "false"])
-        .default("false")
-        .transform((value) => value === "true"),
+      multipart: booleanEnumSchema(),
     }),
     files: z.array(multerFileSchema, "Files must be an array").min(1),
   });
